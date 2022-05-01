@@ -1,0 +1,76 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{verbatim}
+\graphicspath{ {./images/} }
+
+\title{Klece}
+\author{Daniel Skýpala}
+\date{4. prosince 2021}
+
+\begin{document}
+\maketitle
+
+\section{Zamyšlení}
+Každé zvíře bude určitě v nějakém pavilonu. Takže nic nepokazíme na tom, že umístěme zvíře s nejmenší dravostí ze všech zvířat do pavilonu.
+Dále pro podmínku \(|d_j − d_k| \leq p.\) si můžeme rozmyslet, že zvíře v pavilonu má nejmenší možnou dravost,
+takže podmínku můžeme přepsat na:
+\[d_j - d_{min} \leq p\]
+(Pro každé \(d_j\) platí \(d_j \geq d_{min}\), takže levá strana je vždy kladná.) \\
+Každé další zvíře, které do pavilonu přidáme, musí splňovat tuto podmínku, a tedy náležet intervalu:
+\[[d_{min}, d_{min}+p]\]
+Přidat větší zvíře nemůžeme, protože by sežralo \(d_{min}\) a menší zvíře než \(d_{min}\) ani neexistuje. \\
+Takže přidáme do pavilonu všechny zvířata z tohoto intervalu, tím jsme část (alespoň 1) zvířat vyřadili a zbyla nám nová množina zvířat.
+A na tu můžeme tento postup opakovat.
+
+\section{Popis algoritmu}
+Abychom byli schopni rychle zvířata hledat, tak si seřadíme podle dravostí (a uložíme si všechny indexy). Nastavíme \(i=0\) a poté opakujeme:
+\begin{enumerate}
+    \item Zvíře na pozici \(i\) je nejmenší nezařazené, přidáme ho do pavilonu. Zvýšíme \(i\) o 1.
+    \item Dokud zvíře na pozici \(i\) může jít být spolu s nejmenším zvířetem v pavilonu:
+        \begin{itemize}
+            \item Zařadíme ho tam a zvýšíme \(i\) o 1.
+        \end{itemize}
+    \item Když současné zvíře se do pavilonu nevleze, vypíšeme indexy zvířat v pavilonu. (Pokud to má být stejně, jako v ukázokovém řešení, můžeme
+    je i řadit). Dále začneme znovu od bodu 1.
+\end{enumerate}
+Skončíme, když nám dojdou zvířata (\(i\) po zvýšení bude větší rovno délce seznamu).
+
+\section{Časová složitost}
+Jednotlivé části:
+\begin{itemize}
+    \item Počáteční seřazení stihneme v \(O(N \log N)\).
+    \item Poté pro každé zvíře (z \(O(N)\)), buď pro něj pavilon založíme a přidáme ho tam \(O(1)\), nebo ho přidáme do již stávajícího pavilonu \(O(1)\). Celkem \(O(N)\).
+    \item Každý pavilon vypíšeme (v seřazené podobě složitost \(O(p \log p)\)):
+    \[O\left(\sum_{i=0}^m p_i \log p_i\right) \in O(N \log N)\]
+    (Pokud \(N = \sum_{i=0}^m p_i\).)    
+\end{itemize}
+
+Dáme-li to dohromady \(O(N \log N + N + N \log N) = O(N \log N)\).
+
+\section{Paměťová složitost}
+Pamatujeme si akorát seznam seřazených zvířat s indexy \(O(N)\) a zvířata v jednom pavilonu \(O(N)\). Celkem \(O(N)\).
+
+\section{Kód}
+\begin{verbatim}
+n = int(input())
+animals = list(map(int, input().split()))
+p = int(input())
+i = 0
+
+animals = list(sorted(enumerate(animals), key=lambda x: x[1]))
+
+while i < len(animals):
+    min_animal = animals[i]
+    pavilion = [min_animal[0]]
+    i += 1
+    while i < len(animals) and animals[i][1] <= min_animal[1] + p:
+        pavilion.append(animals[i][0])
+        i += 1
+    print(f"({' '.join(map(lambda x: str(x+1), sorted(pavilion)))})")
+\end{verbatim}
+
+\end{document}

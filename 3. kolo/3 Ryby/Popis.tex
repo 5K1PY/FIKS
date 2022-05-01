@@ -1,0 +1,75 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage[czech]{babel}
+\graphicspath{ {./images/} }
+
+\title{3 Ryby}
+\author{Daniel Skýpala}
+\date{21. ledna 2022}
+
+\begin{document}
+\maketitle
+
+\section*{Popis algoritmu}
+
+Budueme provádět známý postup zametání roviny. Vezmeme si přímku, která je rovnoběžná s vektorem \([s_x, s_y]\) a protíná osu \(y\) v bodě
+\([0, -\infty]\) a budeme ji pomalu posouvat do \([0, \infty]\), čímž vyzkoušíme všechny kombinace.
+
+Nejdřív si rozmyslíme, že není zapotřebí zkoušet veškeré možné souřadnice, ale jenom ty, kde naše přímka protíná jeden z vrcholů našich zadaných mnohoúhelníků.
+Je tomu tak proto, že vždy můžeme naši přímku posunout do jednoho z vrcholů, aniž bychom něco změnili. Mezi těmito vrcholy se totiž nic nemění.
+
+Pro vrcholy každého mnohoúhelníka si spočítám, kde přímka rovnoběžná s \([s_x, s_y]\) procházející příslušným vrcholem protíná osu x. Můžu si všimnout,
+že přímka bude současný mnohoúhelník protínat pouze když bude mezi přímkami, která protínají vrcholy mnohoúhelníka a jejich průsečík s osou \(y\)
+(jeho druhá souřadnice) je co nejmenší / největší:
+\begin{figure}[h]
+    \centering
+    \includegraphics{Intersects.png}
+\end{figure}
+
+Tím pádem jsou relevantní z každého mnohoúhelníka jen tyto 2 body.
+
+Krátká vsuvka: Jak počítat průsečík s osou \(y\)? Aby byla naše přímka rovnoběžná s \([s_x, s_y]\) musí mít \(a = \frac{s_y}{s_x}\) (\(a\) jenom říká 
+o kolik se změní \(y\) za \(\Delta x=1\)). Pokud chceme, aby přímka procházela daným bodem, souřadnice již známe, takže jen vyjádříme \(b\):
+\[y = ax + b\]
+\[y = \frac{s_y}{s_x}x + b\]
+\[b = y - \frac{s_y}{s_x}x\]
+Přičemž průsečík s osou \(y\) je \(f(0) = 0a+b = b\), takže jsme ho spočítali. Ale abychom se nemuseli potýkat se zlomky:
+\[s_x b = s_x y - s_y x\]
+A můžeme porovnávat hondotu \(s_x b\). Vzhledem k tomu, že hodnota \(s_x\) je kladná a stejná pro všechny vrcholy, tak platí:
+\[b_1 < b_2 \Leftrightarrow s_x b_1 < s_x b_2\]
+\[b_1 = b_2 \Leftrightarrow s_x b_1 = s_x b_2\]
+\[b_1 > b_2 \Leftrightarrow s_x b_1 > s_x b_2\]
+Čímž jsme se kompletně zbavili desetiných čísel.
+
+Teď když víme, jak spočítat průsečíky s osou \(y\), můžeme si z každého mnohoúhelníka vzít vrchol s nejmenším a největším průsečíkem. K těm
+s nejmenším průsečíkem si zapíšu, že jsou vstupní, těm největším výstupní.
+
+Potom je všechny seřadím vzestupně. (Pokud mají dva body stejný průsečík s osou \(y\), tak nejdřív budu dávat ty vstupní, protože když přímka
+protíná mnohoúhelník ve vrcholu, je to taky průsečík.) Potom je všechny projedu. Budu si udržovat nejvyšší počet protnutých mnohoúhelníků
+a aktuální počet protnutých mnohoúhelníků a pro každý vrchol v seřazeném pořadí:
+\begin{itemize}
+    \item Pokud je to vstupní vrchol, od teď protínám o mnohoúhelník víc. Přičtu si aktuálnímu počtu 1.
+    \item Pokud je to výstupní vrchol, protínám o mnohoúhelník míň. Odečtu si od aktuálního počtu 1.
+    \item Pokud aktuální počet je vyšší jak maximum, uložím si ho jako maximum.
+\end{itemize}
+Na konci jen vypíšu maximum.
+
+Celý tento postup funguje proto, že vyzkouším všechny možnosti, kam přímku můžu umístit.
+
+\section*{Časová složitost}
+Děláme následující operace (\(N\) - \#mnohúhelníku, \(B\) - \#bodů):
+\begin{enumerate}
+    \item Načtení vrcholů a mnohoúhelníků: \(O(B+N)\)
+    \item Spočtení \(s_x b\) pro body a vybrání dvou pro každý mnohoúhelník: \(O(B)\)
+    \item Setřízení: \(O(N \log N)\)
+    \item Projití \(O(N)\)
+\end{enumerate}
+Celkem \(O(B + N \log N)\)
+
+\section*{Paměťová složitost}
+Pro každý bod si pamatujeme jeho hodnotu \(s_x b\). Potom si pamatujeme seřazený seznam. Celkem \(B + N\).
+
+\end{document}

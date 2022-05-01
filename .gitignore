@@ -1,0 +1,17 @@
+*.txt
+*.exe
+SousServer
+*.aux
+*.fdb_latexmk
+*.json
+*.fls
+*.log
+tempCodeRunner.py
+tempCodeRunner.cpp
+*.gz
+3. kolo/3 Ryby/Backup.tex
+3. kolo/3 Ryby/images/Intersects.png
+3. kolo/3 Ryby/images/Intersects.svg
+*.out
+5. kolo/2 Kamery/Generate.py
+5. kolo/3 Vchod/Program.cpp

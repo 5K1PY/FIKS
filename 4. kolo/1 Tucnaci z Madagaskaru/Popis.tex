@@ -1,0 +1,158 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage[czech]{babel}
+\graphicspath{ {./images/} }
+
+\title{1 Tučňáci z Madagaskaru}
+\author{Daniel Skýpala}
+\date{27. 2. 2022}
+
+\begin{document}
+\maketitle
+
+\section{Útok na ukázkový protokol}
+Nejdřiv se budu věnovat útokům, protože části navrženého protokolu se snaží mu zabránit a lze se na útoky odkazovat.
+\subsection{Replay attack}
+\label{1.1}
+Jednom rychlé zmínění, abych se na tuhle chybu mohl odkazovat.
+\subsection{Neviděl jsem to už někde...}
+\label{1.2}
+Můžeme si všimnout, že když pošleme ukázkovým protokolem dvakrát stejnou zprávu, zašifruje se stejně. Pokud si nepřítel bude zapamatovávat všechny přijaté zprávy
+a zároveň reakce základny na ně, je schopen odhadnout co základna udělá a tedy i její typ.
+\subsection{Na délce záleží.}
+\label{1.3}
+Dále si můžeme všimnout, že zprávy, které budeme posílat jsou různě dlouhé. Např. \emph{VYCKEJTE} má 8 znaků, zatímco \emph{OPAKUJ} 6. Podle toho je možné
+určit typ posílané zprávy (a v případě \emph{POSLETE MI n} počet řádů \emph{n}).
+\subsection{Že by chyba v přenosu?}
+\label{1.4}
+Útočník může zkoušet měnit zprávu. Sice většinou budou vycházet nesmylsly, ale zpráva \emph{POSLETE MI n} je na toto obzvláště citlivá, protože pokud
+útočník bude měnit zprávu (prohazovat znaky zprávy za náhodné znaky) v oblasti, kde je uloženo \emph{n} a bude mít štěstí, tak je schopen \emph{n} změnit na jiné číslo. \\
+
+Následující chyby ukázkový protokol má, ale zranitelností jde dosáhnout jednodušeji využitím výše zmíněných chyb. Sem je jenom dávám, abychom se jich vyvarovali
+při navrhování vlastního protokolu.
+\subsection{Double time}
+\label{1.5}
+Potom co bude poslána zpráva, tak si ji uložíme a nepošleme ji dál. Poté počkáme, až ji výzkumná skupina pošle znovu a v tu chvíli pošleme obě zprávy naráz.
+Pokud se jedná třeba o zprávu \emph{POSLETE MI n}, efektivně jsme poslali základně \emph{POSLETE MI 2n}, čímž donutíme základnu udělat něco jiného.
+\subsection{Držení zajatců}
+\label{1.6}
+Podobně jako při předchozím útoku zadržíme poslanou zprávu. Situace se ale změní a výzkumná skupina bude chtít poslat jinou zprávu. V takovém případě může nepřítel
+buď poslat první zprávu, obě zprávy, nebo obě zprávy v opačném pořadí. (Když výzkumná skupinka chce, aby základně došla jen druhá zpráva.) \\
+
+A následující chyby ukázkový protokol nemá, ale chceme se jich vyvarovat při složitějším protokolu:
+\subsection{Neviděl jsem to už někde... (second edition)}
+\label{1.7}
+Vzhledem k tomu, že zašifruj šifruje písmenko po písmenku, tak pokud je stejná část zprávy, ve které je obsah, tak má stejný obsah. (Např. Pokud při každé zprávě
+přidáme k obsahu náhodné znaky vlevo a vpravo a zašifrujeme, tak pro stejný obsah prostředek zprávy je stále stejný.) Toto můžeme využít stejně jako v původní verzi útoku.
+\subsection{Slepování}
+\label{1.8}
+Pokud víme, jakou část tvoří ve zprávě tvoří samotný obsah zprávy (např. \emph{VYCKEJTE}), můžeme vzít obsah první zprávy a vyměnit ho s obsahem druhé zprávy, s tímže zbytek
+necháme (pokud je ve zprávě např. pořadové číslo). Tím by se dala prolomit určitá ochrana pro pořadí. (Pokud např. posíláme pořadové číslo zprávy.)
+\subsection{Ten internet už zase nefunguje}
+\label{1.9}
+A na závěr se nesmí stát, že pokud jedna zpráva nedojde, nebo je přerušena, protokol se zhroutí. (Např. Pokud by základna čekala na zprávu č. 2, ale
+výzkumná skupina by posílala protokoly s vyšším číslem.)
+
+\section{Návrh protokolu}
+Na začátku si tučňáci domluví strategii a vymění si hlavní šifrovací klíč \(mainkey\).
+Samotná komunikace vypadá následoně: Když výzkumná skupinka chce poslat zprávu základně, zašifruje ji protokolem níže a pošle ji a bude ji opakovaně posílat tak
+dlouho, než základna nepotvrdí přijetí zprávy ve validním formátu. Potvrzení zprávy probíhá tak, že pokud je zpráva validní, základna ji pošle
+zpátky výzkumné skupince ve stejném znění, jak ji dostala.
+
+Odesíláná zpráva vypadá takto:
+\[\text{basemessage} := \text{[id][timestamp][message][padding][hash]}\]
+\[\text{protectedmessage} := \text{[sifruj(key, basemessage)][key]}\]
+\[\text{sendedmessage} := \text{sifruj(mainkey, protectedmessage)}\]
+Její části:
+\subsection{Message}
+Samotný obsah zprávy, který chceme poslat. (Např. \emph{VYCKEJTE}) Délka 6 - 26 znaků.
+
+\subsection{Padding}
+Tečka + náhodně vygenerovaná zpráva, takové délky, aby spolu s message dávala 64 znaků. (Celkem délka paddingu: 64 - len(message), náhodné zprávy o 1 kratší). Zabraňuje útokům,
+které využívají různé délky zpráv a útokům, že stejná zpráva vypadá stejně. (\hyperref[1.2]{1.2}, \hyperref[1.3]{1.3})
+
+Tečka na začátku paddingu je proto, abychom poznali, kde končí odesílaná zpráva a začíná padding.
+
+\subsection{Id}
+Pořadové číslo zprávy. Délka 13 znaků. Na začátku je nastaveno na 0, pokadždé když je zpráva potvrzena, zvýší si ho výzkumná skupina i základna o 1.
+Pokud dojde zpráva s takovým \(id\), jaké očekáváme, tak může být validní, jinak je tato zpráva zastaralá, nebo falešná a budeme ji ignorovat.
+Slouží k obraně proti útkoům: \hyperref[1.1]{1.1}, \hyperref[1.5]{1.5}
+
+\subsection{Timestamp}
+Čas, do kdy je zpráva platná ve formátu dd/mm/yyyy hh:mm:ss. Délka 19 znaků. Slouží k tomu, že když posíláme určitou zprávu s daným id, ale situace se změní a chceme
+polat jinou zprávu než jsme posílali původně. (V takovémto případě nechceme, aby základně nedošla první zpráva nebo obě.) Tak můžeme počkat, než vyprší platnost
+první zprávy a začneme posílat novou druhou. (Útok \hyperref[1.6]{1.6})
+
+Otázkou je, jak dlohou nastavit platnost zprávy. Když posíláme zprávu, platnost můžeme nastavit jako čas, mezi kterým byla poslední zpráva odeslána a potvrzena.
+(Pro případ první odesílané zprávy dáme rozumnou hodnotu podle odhadu připojení.) Pokud vidíme, že nám nechodí žádné potvrzení, tak platnost zvýšíme (např. vynásobíme 2×).
+Zároveň ale nechceme, aby platnost byla zbytečně velká, (kvůli obraně proti útoku \hyperref[1.6]{1.6}, kdy čekáme na vypršení platnosti), takže je dobré zvolit nějakou maximální
+hodnotu, nad kterou zvyšovat nebudeme (třeba 5 sekund soudě podle normálnímu připojení k internetu).
+
+\subsection{Hash}
+Otisk celé následující části: \(\text{[id][timestamp][message][padding]}\). (32 znaků) Zabraňuje tomu, že když je něco ve zprávě změněno, zpráva se tváří jako validní.
+(Útoky \hyperref[1.4]{1.4} a \hyperref[1.8]{1.8})
+
+\subsection{Protectedmessage}
+Následně je vygenerován náhodný klíč, basemessage je jím zašifrován a ke zprávě je připojen na toto použitý klíč. (Ten má 32 znaků.) Toto zabraňuje útoku \hyperref[1.7]{1.7}.
+
+Pozor - náhodné klíče nemůžeme znovupoužít, protože by bylo vidět, že jsme tak učinili. (Konec zprávy je stejný.) Poté bychom mohli aplikovat útok \hyperref[1.7]{1.7}, protože vnitřek je stejný.
+Musíme si tedy udržovat klíče, které jsme již použili a generovat takový, který je nepoužitý.
+
+\subsection{Sendedmessage}
+Protože protectedmessage jde rozšifrovat kýmkoliv (obsahuje klíč) a přečíst, je zapotřebí ji celou zašifrovat ještě jednou hlavním klíčem, který jsme si vyměnili na začátku. \\
+
+Nyní k ostatním věcem okolo protokolu:
+\subsection{Jak zprávu vytvořit?}
+Vezmeme si současné id, do kdy má zpráva platit, obsah zprávy a padding příslušné délky. Toto celé pospojujeme dohromady a uděláme z toho otisk, který připojíme za to. Dále si vygenerujeme náhodný klíč a zprávu i s otiskem
+náhodným klíčem zašifrujeme. Za zašifrovanou zprávu připojíme náhodný klíč. Nakonec všechno zašifrujeme hlavním klíčem a pošleme.
+
+\subsection{Jak zprávu rozšifrovat?}
+To co jsme dostali dešifujeme hlavním klíčem, poté ze zprávy vezmeme náhodný klíč a zbytek dešifrujeme náhdoným klíčem. Nyní ověříme validitu:
+\begin{itemize}
+    \item Id je rovno očekávanému.
+    \item Zprávě nevypršela platnost (timestamp).
+    \item Hash sedí.
+\end{itemize}
+A pokud je zpráva validní, tak přečteme její obsah a pošleme potvrzení výzkumné skupince (Zpráva v přesném znění, tak jak nám přišla). Následovně jak my (hned po odeslání potvrzení),
+tak výzkumná skupinka si zvýší id o 1 (hned po přijetí potvrzení).
+
+\section{Obrana jednotlivým útokům}
+Jen v rychlosti proletím, jakým způsobem se protokol brání zmíněným útokům:
+\subsection{Replay attack}
+Id už není aktuální (původní zpráva byla přijata), zpráva je tedy nevalidní.
+\subsection{Neviděl jsem to už někde...}
+Padding je jiný, a po přešifrování náhodným klíčem je zpráva úplně jiná.
+\subsection{Na délce záleží.}
+Díky paddingu mají všechny zprávy stejnou délku.
+\subsection{Že by chyba v přenosu?}
+\begin{itemize}
+    \item Buď je poškozena část s id, platností, obsahem a paddingem. V takovémto případě nesedí hash, který se z těchto věcí dělá.
+    \item Nebo je poškozen hash. V takovémto případě hash ale také nesedí.
+    \item Nebo je poškozen náhodný klíč. V tomto případě po rozšifrování basemessage vychází náhodný šum, takže zpráva nemá šanci projít kontrolami.
+\end{itemize}
+\subsection{Double time}
+Zprávy mají stejné id, jen jedna z nich bude validní.
+\subsection{Držení zajatců}
+Poté, co chceme změnit zprávu počkáme až původní zprávě vyprší platnost (plus rezerva). (V tu chvíli víme, že základna zprávu nepřijala.)
+Původně poslané zprávě již vypršela platnost, je tedy nevalidní a můžeme posílat pouze novou. (Celý tento postup lze opakovat, pokud bychom chtěli změnit obsah víckrát.)
+\subsection{Neviděl jsem to už někde... (second edition)}
+Celá zpráva je přešifrována náhodným klíčem, takže obsah vždy závisí na náhodném klíči. Tedy stejný obsah je po zašifrování různý pro různé náhodné klíče.
+\subsection{Slepování}
+Buď slepujeme v rámci basemessage - v tomto případě nesedí hash zprávy, zpráva je tedy nevalidní. Nebo se snažíme vyměnit náhodný klíč - v tu chvíli vychází náhodný šum.
+\subsection{Ten internet už zase nefunguje}
+Tomuto útkou zamezujeme tak, že zprávu posíláme pořád dokola, než dostaneme potvrzení o přijetí.
+
+\section{Věci na zmínění}
+\subsection{Kapacita}
+Pokud pošleme přílišné množství zpráv, protokol se začne rozbíjet - nejdříve nám dojdou náhodné klíče, poté paddingy a nakonec idčka. Toto způsobí pád celého protokolu, protože začne být
+zranitelný vůči opakovacím útokům (\hyperref[1.1]{1.1}, \hyperref[1.2]{1.2}, \hyperref[1.7]{1.7},...). Protože ale můžeme poslat \(2^{32}\) zpráv, což je při jedná zprávé na sekundu více než 136 let,
+tak tohle není úplně relevantní. Pokud bychom tomu přesto chtěli tomuto zabránit, můžeme délky příslušných částí zdvojnásobit (což sice zase není na věčnost, ale co už, vydrží to \(2^{32}\)-krát déle).
+\subsection{Komunikace ze zákldany}
+Základna může a nemusí komunikovat. Má ten luxus předpokládat, že její zprávy nebudou měněny, takže pokud chce, stačí použít jen odeslat zprávu ve stejném protokolu, jako popsáno zde, akorát
+bez potvrzení. (Místo kterého si základna i skupina zvýší id o 1 - základna hned po odeslání, skupina hned po přijetí. - Toto je možné udělat, protože zprávy nejsou rušeny.)
+
+\end{document}
